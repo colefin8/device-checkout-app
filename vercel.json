@@ -4,9 +4,6 @@
       "runtime": "@vercel/node@3.0.10"
     }
   },
-  "env": [
-    "GOOGLE_SERVICE_ACCOUNT"
-  ],
   "buildCommand": "npm run build",
   "installCommand": "npm install"
 }
