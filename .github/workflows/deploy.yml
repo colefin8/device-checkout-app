@@ -34,8 +34,8 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
           VITE_GOOGLE_SPREADSHEET_ID: ${{ secrets.VITE_GOOGLE_SPREADSHEET_ID }}
+          VITE_API_URL: https://device-checkout-app.vercel.app
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4

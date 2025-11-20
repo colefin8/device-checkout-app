@@ -1,6 +1,7 @@
 /**
  * Google Sheets API Service for Device Checkout App
- * Uses direct HTTP requests instead of googleapis library for better browser compatibility
+ * Uses a backend service account for automatic authentication
+ * No user login required!
  */
 
 export interface CheckoutData {
@@ -11,47 +12,41 @@ export interface CheckoutData {
   status: 'checked-out' | 'checked-in'
 }
 
-const SHEETS_API_URL = 'https://sheets.googleapis.com/v4/spreadsheets'
+// Backend API endpoint (from environment or localhost for dev)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const SHEETS_ENDPOINT = `${API_BASE_URL}/api/sheets`
 
 /**
- * Send checkout data to Google Sheet
+ * Send checkout data to Google Sheet using service account
  * @param spreadsheetId - The ID of the Google Sheet
  * @param data - The checkout data to send
- * @param apiKey - Google API key
  */
 export async function sendCheckoutToSheet(
   spreadsheetId: string,
-  data: CheckoutData,
-  apiKey: string
+  data: CheckoutData
 ): Promise<void> {
   try {
-    const values = [
-      [
-        data.personName,
-        data.deviceType,
-        data.deviceId,
-        data.checkoutTime,
-        data.status,
-      ],
-    ]
-
-    const response = await fetch(
-      `${SHEETS_API_URL}/${spreadsheetId}/values/Sheet1!A:E:append?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          values,
-          majorDimension: 'ROWS',
-        }),
-      }
-    )
+    const response = await fetch(SHEETS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'append',
+        spreadsheetId,
+        data: [
+          data.personName,
+          data.deviceType,
+          data.deviceId,
+          data.checkoutTime,
+          data.status,
+        ],
+      }),
+    })
 
     if (!response.ok) {
       const error = await response.json()
-      throw new Error(error.error?.message || `HTTP ${response.status}`)
+      throw new Error(error.error || `HTTP ${response.status}`)
     }
 
     console.log('Data sent to Google Sheet successfully')
@@ -62,28 +57,27 @@ export async function sendCheckoutToSheet(
 }
 
 /**
- * Get all checkout records from Google Sheet
+ * Get all checkout records from Google Sheet using service account
  * @param spreadsheetId - The ID of the Google Sheet
- * @param apiKey - Google API key
  */
 export async function getCheckoutRecords(
-  spreadsheetId: string,
-  apiKey: string
+  spreadsheetId: string
 ): Promise<CheckoutData[]> {
   try {
-    const response = await fetch(
-      `${SHEETS_API_URL}/${spreadsheetId}/values/Sheet1!A:E?key=${apiKey}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+    const response = await fetch(SHEETS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'read',
+        spreadsheetId,
+      }),
+    })
 
     if (!response.ok) {
       const error = await response.json()
-      throw new Error(error.error?.message || `HTTP ${response.status}`)
+      throw new Error(error.error || `HTTP ${response.status}`)
     }
 
     const data = (await response.json()) as Record<string, unknown>

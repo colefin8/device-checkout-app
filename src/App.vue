@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { sendCheckoutToSheet, getCheckoutRecords, type CheckoutData } from '@/services/googleSheetsService'
+import { sendCheckoutToSheet, type CheckoutData } from '@/services/googleSheetsService'
 
-// Configuration - Set these environment variables or update them directly
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || ''
+// Configuration - Set these environment variables
 const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID || ''
 
 // Form state
@@ -14,8 +13,6 @@ const status = ref<'checked-out' | 'checked-in'>('checked-out')
 const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
-const records = ref<CheckoutData[]>([])
-const showRecords = ref(false)
 
 // Device options
 const deviceTypes = ['Google Pixel', 'Apple iPhone', 'Mac Mini'] as const
@@ -33,8 +30,8 @@ const handleSubmit = async () => {
     return
   }
 
-  if (!API_KEY || !SPREADSHEET_ID) {
-    errorMessage.value = 'Google API credentials are not configured. Please set VITE_GOOGLE_API_KEY and VITE_GOOGLE_SPREADSHEET_ID environment variables.'
+  if (!SPREADSHEET_ID) {
+    errorMessage.value = 'Spreadsheet ID is not configured. Please set VITE_GOOGLE_SPREADSHEET_ID environment variable.'
     return
   }
 
@@ -54,7 +51,7 @@ const handleSubmit = async () => {
       status: status.value,
     }
 
-    await sendCheckoutToSheet(SPREADSHEET_ID, data, API_KEY)
+    await sendCheckoutToSheet(SPREADSHEET_ID, data)
 
     successMessage.value = `Device ${status.value === 'checked-out' ? 'checked out' : 'checked in'} successfully!`
 
@@ -66,27 +63,6 @@ const handleSubmit = async () => {
   } catch (error) {
     errorMessage.value = `Error: ${error instanceof Error ? error.message : String(error)}`
     console.error('Checkout error:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Fetch records
-const handleFetchRecords = async () => {
-  if (!API_KEY || !SPREADSHEET_ID) {
-    errorMessage.value = 'Google API credentials are not configured.'
-    return
-  }
-
-  isLoading.value = true
-  errorMessage.value = ''
-
-  try {
-    records.value = await getCheckoutRecords(SPREADSHEET_ID, API_KEY)
-    showRecords.value = true
-  } catch (error) {
-    errorMessage.value = `Error fetching records: ${error instanceof Error ? error.message : String(error)}`
-    console.error('Fetch error:', error)
   } finally {
     isLoading.value = false
   }
@@ -139,7 +115,7 @@ clearMessages()
 
           <div class="form-group">
             <label for="device-type">Device Type *</label>
-            <select id="device-type" v-model="deviceType">
+            <select class="dropdown" id="device-type" v-model="deviceType">
               <option v-for="type in deviceTypes" :key="type" :value="type">
                 {{ type }}
               </option>
@@ -147,19 +123,19 @@ clearMessages()
           </div>
 
           <div class="form-group">
-            <label for="device-id">Device ID *</label>
+            <label for="device-id">Device Number *</label>
             <input
               id="device-id"
               v-model="deviceId"
               type="text"
-              placeholder="Enter device serial or ID number"
+              placeholder="Enter device number"
               required
             />
           </div>
 
           <div class="form-group">
             <label for="status">Status *</label>
-            <select id="status" v-model="status">
+            <select class="dropdown" id="status" v-model="status">
               <option v-for="st in statusOptions" :key="st" :value="st">
                 {{ st === 'checked-out' ? 'Check Out' : 'Check In' }}
               </option>
@@ -171,318 +147,271 @@ clearMessages()
           </button>
         </form>
       </section>
-
-      <!-- View Records Section -->
-      <section class="records-section">
-        <button @click="handleFetchRecords" :disabled="isLoading" class="btn btn-secondary">
-          {{ isLoading ? 'Loading...' : 'View All Records' }}
-        </button>
-
-        <div v-if="showRecords && records.length > 0" class="records-table">
-          <h2>Checkout Records</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Person Name</th>
-                <th>Device Type</th>
-                <th>Device ID</th>
-                <th>Time</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(record, index) in records" :key="index">
-                <td>{{ record.personName }}</td>
-                <td>{{ record.deviceType }}</td>
-                <td>{{ record.deviceId }}</td>
-                <td>{{ record.checkoutTime }}</td>
-                <td :class="['status', record.status]">
-                  {{ record.status === 'checked-out' ? 'Checked Out' : 'Checked In' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div v-else-if="showRecords && records.length === 0" class="no-records">
-          <p>No records found in the Google Sheet.</p>
-        </div>
-      </section>
     </main>
-
-    <footer>
-      <p>Device Checkout App v1.0</p>
-    </footer>
   </div>
 </template>
 
 <style scoped>
-:root {
-  --primary-color: #4285f4;
-  --secondary-color: #34a853;
-  --error-color: #d32f2f;
-  --warning-color: #fbbc04;
-  --text-color: #202124;
-  --border-color: #dadce0;
-  --bg-light: #f8f9fa;
+
+.dropdown {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 30px;
+  background: transparent;
+  background-image: url('/public/dropdown-arrow-svgrepo-com.svg');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 30px;
+  padding-right: 30px;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+.dropdown::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--off-white);
+  pointer-events: none;
 }
 
 .app-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  background-color: #ffffff;
+  background: var(--primary-blue);
 }
 
 header {
+  background: var(--primary-blue);
+  padding: .75rem .5rem;
   text-align: center;
-  margin-bottom: 40px;
-  padding: 20px 0;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 3px solid #256CFA;
+  box-shadow: 0 4px 12px rgba(37, 108, 250, 0.3);
 }
 
 header h1 {
-  margin: 0;
-  color: var(--primary-color);
   font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--off-white);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
-header .subtitle {
-  margin: 10px 0 0 0;
-  color: #5f6368;
+.subtitle {
   font-size: 1rem;
+  color: var(--off-white);
+  font-weight: 300;
 }
 
 main {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 30px;
+  flex-grow: 1;
+  padding: 3rem 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 section {
-  background-color: var(--bg-light);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 25px;
+  margin-bottom: 3rem;
+  background: rgba(37, 108, 250, 0.1);
+  border: 2px solid #256CFA;
+  border-radius: 12px;
+  padding: .5rem;
+  backdrop-filter: blur(10px);
 }
 
 section h2 {
-  margin-top: 0;
-  color: var(--text-color);
   font-size: 1.5rem;
-}
-
-/* Messages */
-.message {
-  padding: 15px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  font-size: 1rem;
-}
-
-.message.error {
-  background-color: #fcebee;
-  color: var(--error-color);
-  border: 1px solid #f48fb1;
-}
-
-.message.success {
-  background-color: #e8f5e9;
-  color: var(--secondary-color);
-  border: 1px solid #81c784;
-}
-
-/* Form Styles */
-.form-section form {
-  display: grid;
-  gap: 20px;
+  color: var(--off-white);
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #256CFA;
+  padding-bottom: 0.75rem;
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
+  margin-bottom: 1.5rem;
 }
 
 label {
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--text-color);
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--off-white);
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
 input,
 select {
-  padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: 1rem;
-  font-family: inherit;
-  transition: border-color 0.3s ease;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--off-white);
+  border-radius: 8px;
+  background: var(--dark-blue);
+  color: var(--off-white);
+  font-family: 'SUSE Mono', sans-serif;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
 }
 
 input:focus,
 select:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+  border-color: var(--off-white);
+  box-shadow: 0 0 12px rgba(186, 219, 255, 0.5);
+  background-color: var(--dark-blue);
 }
 
 input::placeholder {
-  color: #9aa0a6;
+  color: #DDD;
 }
 
-/* Buttons */
 .btn {
-  padding: 12px 24px;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 500;
+  border-radius: 8px;
+  font-family: 'SUSE Mono', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
+
 .btn-primary {
-  background-color: var(--primary-color);
-  color: white;
+  background: #A8F39B;
+  color: #020e1e;
   width: 100%;
-  margin-top: 10px;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #1765cc;
-  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(168, 243, 155, 0.4);
 }
 
-.btn-secondary {
-  background-color: var(--secondary-color);
-  color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: #1e8449;
-  box-shadow: 0 2px 8px rgba(52, 168, 83, 0.3);
-}
-
-.btn:disabled {
-  opacity: 0.6;
+.btn-primary:disabled {
+  background: #666;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
-/* Records Table */
+.message {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid;
+  font-weight: 500;
+}
+
+.message.error {
+  background: rgba(252, 131, 94, 0.15);
+  border-left-color: #FC835E;
+  color: #FFB097;
+}
+
+.message.success {
+  background: rgba(168, 243, 155, 0.15);
+  border-left-color: #A8F39B;
+  color: #CFF6C0;
+}
+
+.records-section {
+  width: 100%;
+}
+
 .records-table {
-  margin-top: 30px;
   overflow-x: auto;
-}
-
-.records-table h2 {
-  margin-top: 0;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  background-color: white;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  overflow: hidden;
+  margin-top: 1.5rem;
 }
 
 thead {
-  background-color: #f1f3f4;
+  background: #256CFA;
 }
 
 th {
-  padding: 12px;
+  padding: 1rem;
   text-align: left;
-  font-weight: 600;
-  color: var(--text-color);
-  border-bottom: 2px solid var(--border-color);
+  color: var(--off-white);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
 }
 
 td {
-  padding: 12px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 1rem;
+  border-bottom: 1px solid rgba(37, 108, 250, 0.3);
+  color: var(--off-white);
 }
 
 tbody tr:hover {
-  background-color: #f8f9fa;
+  background: rgba(37, 108, 250, 0.2);
+  transition: background 0.3s ease;
 }
 
 .status {
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
   text-align: center;
   display: inline-block;
-  min-width: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status.checked-out {
-  background-color: #fff3cd;
-  color: #856404;
+  background: rgba(252, 131, 94, 0.2);
+  color: #FFB097;
+  border: 1px solid #FC835E;
 }
 
 .status.checked-in {
-  background-color: #d4edda;
-  color: #155724;
+  background: rgba(168, 243, 155, 0.2);
+  color: #CFF6C0;
+  border: 1px solid #A8F39B;
 }
 
 .no-records {
   text-align: center;
-  padding: 30px;
-  color: #5f6368;
-  font-style: italic;
+  padding: 2rem;
+  color: var(--off-white);
+  font-size: 1rem;
 }
 
-/* Footer */
-footer {
-  text-align: center;
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-color);
-  color: #5f6368;
-  font-size: 0.9rem;
-}
-
-/* Responsive Design */
 @media (max-width: 768px) {
-  .app-container {
-    padding: 15px;
-  }
-
   header h1 {
     font-size: 1.8rem;
   }
 
+  main {
+    padding: 1.5rem 1rem;
+  }
+
   section {
-    padding: 15px;
+    padding: 1.5rem 1rem;
   }
 
   table {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   th,
   td {
-    padding: 8px;
-  }
-
-  .btn {
-    padding: 10px 16px;
-    font-size: 0.95rem;
+    padding: 0.75rem 0.5rem;
   }
 }
 </style>
