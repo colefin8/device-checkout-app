@@ -25,23 +25,15 @@ async function getServiceAccountToken(): Promise<string> {
   return token.token || ''
 }
 
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Set CORS headers on all responses
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    res.setHeader(key, value)
-  })
+  // Set CORS headers on all responses FIRST (before any other logic)
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
-  // Handle CORS preflight
+  // Handle CORS preflight - must return 200 with headers
   if (req.method === 'OPTIONS') {
-    res.status(200).end()
-    return
+    return res.status(200).end()
   }
 
   try {
