@@ -89,7 +89,21 @@ export default defineConfig({
 })
 ```
 
-## Step 3: Add GitHub Secrets
+## Step 3: Configure Workflow Permissions
+
+GitHub Actions needs write permissions to deploy your app to GitHub Pages.
+
+1. Go to your GitHub repository
+2. Click **Settings** (top right)
+3. Go to **Actions** → **General** (left sidebar)
+4. Scroll down to "Workflow permissions"
+5. Select **"Read and write permissions"**
+6. Check "Allow GitHub Actions to create and approve pull requests"
+7. Click **Save**
+
+✅ Workflow permissions are now configured!
+
+## Step 4: Add GitHub Secrets
 
 GitHub Secrets securely store your API credentials without exposing them.
 
@@ -109,7 +123,7 @@ GitHub Secrets securely store your API credentials without exposing them.
 
 ✅ Both secrets are now securely stored!
 
-## Step 4: Enable GitHub Pages
+## Step 5: Enable GitHub Pages
 
 1. In your repository, go to **Settings**
 2. Go to **Pages** (left sidebar)
@@ -119,9 +133,9 @@ GitHub Secrets securely store your API credentials without exposing them.
 
 ✅ GitHub Pages is now enabled!
 
-## Step 5: Deploy
+## Step 6: Deploy
 
-### 5.1 Push to GitHub
+### 6.1 Push to GitHub
 
 ```bash
 git add .
@@ -129,7 +143,7 @@ git commit -m "Deploy Device Checkout App"
 git push origin main
 ```
 
-### 5.2 Monitor Deployment
+### 6.2 Monitor Deployment
 
 1. Go to your repository on GitHub
 2. Click **Actions** tab
@@ -137,7 +151,7 @@ git push origin main
 4. Wait for the green checkmark (success!)
 5. Deployment typically takes 1-2 minutes
 
-### 5.3 Access Your Live App
+### 6.3 Access Your Live App
 
 Your app is now live at:
 ```
