@@ -191,7 +191,7 @@ header {
   background: var(--primary-blue);
   padding: .75rem .5rem;
   text-align: center;
-  border-bottom: 3px solid #256CFA;
+  border-bottom: 3px solid #0337A0;
   box-shadow: 0 4px 12px rgba(37, 108, 250, 0.3);
 }
 
@@ -221,7 +221,7 @@ main {
 section {
   margin-bottom: 3rem;
   background: rgba(37, 108, 250, 0.1);
-  border: 2px solid #256CFA;
+  border: 2px solid #0337A0;
   border-radius: 12px;
   padding: .5rem;
   backdrop-filter: blur(10px);
@@ -231,7 +231,7 @@ section h2 {
   font-size: 1.5rem;
   color: var(--off-white);
   margin-bottom: 1.5rem;
-  border-bottom: 2px solid #256CFA;
+  border-bottom: 2px solid #0337A0;
   padding-bottom: 0.75rem;
 }
 
