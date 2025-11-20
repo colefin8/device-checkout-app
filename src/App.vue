@@ -307,19 +307,19 @@ input::placeholder {
   padding: 1rem 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
-  border-left: 4px solid;
+  border: 4px solid;
   font-weight: 500;
 }
 
 .message.error {
   background: rgba(252, 131, 94, 0.15);
-  border-left-color: #FC835E;
+  border-color: #FC835E;
   color: #FFB097;
 }
 
 .message.success {
   background: rgba(168, 243, 155, 0.15);
-  border-left-color: #A8F39B;
+  border-color: #A8F39B;
   color: #CFF6C0;
 }
 
