@@ -1,3 +1,18 @@
+@font-face {
+  font-family: 'SUSE Mono';
+  src: url('/fonts/SUSE_Mono/SUSEMono-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SUSE Mono';
+  src: url('/fonts/SUSE_Mono/SUSEMono-Italic-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   /* Main Colors */
   --primary-blue: #0337A0;
@@ -25,9 +40,9 @@
 html,
 body {
   font-family: 'SUSE Mono', sans-serif;
-  color: #FBFBFB;
+  color: var(--off-white);
   line-height: 1.6;
-  background-color: var;
+  background-color: var(--near-black);
   min-height: 100vh;
 }
 
