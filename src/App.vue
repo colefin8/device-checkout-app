@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { CheckoutData } from '@/services/googleSheetsService'
 
 // Configuration - Set these environment variables
@@ -14,6 +14,16 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
+// Recent devices state
+interface RecentDevice {
+  id: string
+  personName: string
+  deviceType: 'Google Pixel' | 'Apple iPhone' | 'Mac Mini'
+  deviceId: string
+  checkoutTime: string
+}
+const recentDevices = ref<RecentDevice[]>([])
+
 // Device options
 const deviceTypes = ['Google Pixel', 'Apple iPhone', 'Mac Mini'] as const
 const statusOptions = ['checked-out', 'checked-in'] as const
@@ -22,6 +32,90 @@ const statusOptions = ['checked-out', 'checked-in'] as const
 const isFormValid = computed(() => {
   return personName.value.trim() !== '' && deviceId.value.trim() !== ''
 })
+
+// LocalStorage management
+const STORAGE_KEY = 'device-checkout-history'
+const MAX_RECENT_DEVICES = 5
+
+const loadRecentDevices = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      recentDevices.value = JSON.parse(stored)
+    }
+  } catch (error) {
+    console.error('Error loading recent devices:', error)
+  }
+}
+
+const saveRecentDevices = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recentDevices.value))
+  } catch (error) {
+    console.error('Error saving recent devices:', error)
+  }
+}
+
+const addRecentDevice = (data: CheckoutData) => {
+  const recentDevice: RecentDevice = {
+    id: `${data.deviceId}-${Date.now()}`,
+    personName: data.personName,
+    deviceType: data.deviceType,
+    deviceId: data.deviceId,
+    checkoutTime: data.checkoutTime,
+  }
+
+  recentDevices.value.unshift(recentDevice)
+
+  if (recentDevices.value.length > MAX_RECENT_DEVICES) {
+    recentDevices.value = recentDevices.value.slice(0, MAX_RECENT_DEVICES)
+  }
+
+  saveRecentDevices()
+}
+
+const removeRecentDevice = (id: string) => {
+  recentDevices.value = recentDevices.value.filter(device => device.id !== id)
+  saveRecentDevices()
+}
+
+const quickCheckIn = async (device: RecentDevice) => {
+  if (!SPREADSHEET_ID) {
+    errorMessage.value = 'Spreadsheet ID is not configured.'
+    return
+  }
+
+  isLoading.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    const { sendCheckoutToSheet } = await import('@/services/googleSheetsService')
+
+    const now = new Date()
+    const checkoutTime = now.toLocaleString()
+
+    const data: CheckoutData = {
+      personName: device.personName,
+      deviceType: device.deviceType,
+      deviceId: device.deviceId,
+      checkoutTime,
+      status: 'checked-in',
+    }
+
+    await sendCheckoutToSheet(SPREADSHEET_ID, data)
+
+    successMessage.value = `${device.deviceType} #${device.deviceId} checked in successfully!`
+    removeRecentDevice(device.id)
+    clearMessages()
+  } catch (error) {
+    errorMessage.value = `Error checking in device: ${error instanceof Error ? error.message : String(error)}`
+    console.error('Check-in error:', error)
+    clearMessages()
+  } finally {
+    isLoading.value = false
+  }
+}
 
 // Submit checkout
 const handleSubmit = async () => {
@@ -58,6 +152,11 @@ const handleSubmit = async () => {
 
     successMessage.value = `Device ${status.value === 'checked-out' ? 'checked out' : 'checked in'} successfully!`
 
+    // Save to recent devices if checking out
+    if (status.value === 'checked-out') {
+      addRecentDevice(data)
+    }
+
     // Reset form
     personName.value = ''
     deviceType.value = 'Google Pixel'
@@ -81,6 +180,11 @@ const clearMessages = () => {
     errorMessage.value = ''
   }, 5000)
 }
+
+// Load recent devices on mount
+onMounted(() => {
+  loadRecentDevices()
+})
 </script>
 
 <template>
@@ -149,6 +253,28 @@ const clearMessages = () => {
             {{ isLoading ? 'Submitting...' : status === 'checked-out' ? 'Check Out Device' : 'Check In Device' }}
           </button>
         </form>
+      </section>
+
+      <!-- Recent Devices Section -->
+      <section v-if="recentDevices.length > 0" class="recent-devices-section">
+        <h2>Recently Checked Out</h2>
+        <div class="devices-list">
+          <div v-for="device in recentDevices" :key="device.id" class="device-card">
+            <div class="device-info">
+              <div class="device-name">{{ device.deviceType }} #{{ device.deviceId }}</div>
+              <div class="device-person">{{ device.personName }}</div>
+              <div class="device-time">{{ device.checkoutTime }}</div>
+            </div>
+            <button
+              type="button"
+              :disabled="isLoading"
+              @click="quickCheckIn(device)"
+              class="btn btn-check-in"
+            >
+              Check In
+            </button>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -333,6 +459,81 @@ input::placeholder {
   color: var(--lime-green);
 }
 
+/* Recent Devices Styles */
+.recent-devices-section {
+  background: linear-gradient(135deg, rgba(168, 243, 155, 0.05), rgba(3, 55, 160, 0.05)) !important;
+  border: 1px solid rgba(168, 243, 155, 0.2) !important;
+}
+
+.devices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.device-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(168, 243, 155, 0.2);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.device-card:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(168, 243, 155, 0.4);
+  box-shadow: 0 8px 16px rgba(168, 243, 155, 0.1);
+}
+
+.device-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.device-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--lime-green);
+  margin-bottom: 0.25rem;
+}
+
+.device-person {
+  font-size: 0.9rem;
+  color: var(--light-blue);
+  margin-bottom: 0.25rem;
+}
+
+.device-time {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.btn-check-in {
+  padding: 0.75rem 1.25rem;
+  background: var(--grapefruit);
+  color: var(--off-white);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(252, 131, 94, 0.2);
+  margin-top: 0;
+}
+
+.btn-check-in:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 8px 16px rgba(252, 131, 94, 0.3);
+}
+
+.btn-check-in:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 @media (max-width: 480px) {
   header h1 {
     font-size: 1.75rem;
@@ -350,6 +551,15 @@ input::placeholder {
   input, select, .btn {
     padding: 0.875rem 1rem;
     font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+
+  .device-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-check-in {
+    width: 100%;
   }
 }
 </style>
