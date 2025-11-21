@@ -29,6 +29,40 @@
   --light-grapefruit: #FFB097;
   --lime-green: #A8F39B;
   --light-green: #CFF6C0;
+
+  /* Theme Variables */
+  --bg-primary: var(--near-black);
+  --bg-secondary: var(--dark-blue);
+  --text-primary: var(--off-white);
+  --text-secondary: var(--light-blue);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --section-bg: rgba(0, 51, 102, 0.25);
+  --section-border: rgba(3, 55, 160, 0.5);
+  --header-bg: rgba(3, 55, 160, 0.15);
+  --input-bg: rgba(0, 0, 0, 0.2);
+}
+
+html.light-mode {
+  --primary-blue: #0337A0;
+  --light-gray: #EBF2FA;
+  --light-blue: #1a3a66;
+  --off-white: #FBFBFB;
+  --dark-blue: #E8F0F8;
+  --near-black: #F5F7FA;
+  --grapefruit: #D32F2F;
+  --light-grapefruit: #D32F2F;
+  --lime-green: #2E7D32;
+  --light-green: #2E7D32;
+
+  --bg-primary: #F5F7FA;
+  --bg-secondary: #E8F0F8;
+  --text-primary: #0d1117;
+  --text-secondary: #1a3a66;
+  --border-color: rgba(3, 55, 160, 0.3);
+  --section-bg: rgba(3, 55, 160, 0.12);
+  --section-border: rgba(3, 55, 160, 0.4);
+  --header-bg: rgba(3, 55, 160, 0.15);
+  --input-bg: #ffffff;
 }
 
 * {
@@ -40,10 +74,11 @@
 html,
 body {
   font-family: 'SUSE Mono', sans-serif;
-  color: var(--off-white);
+  color: var(--text-primary);
   line-height: 1.6;
-  background-color: var(--near-black);
+  background-color: var(--bg-primary);
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {

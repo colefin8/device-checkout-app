@@ -5,6 +5,9 @@ import type { CheckoutData } from '@/services/googleSheetsService'
 // Configuration - Set these environment variables
 const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID || ''
 
+// Theme state
+const isDarkMode = ref(true)
+
 // Form state
 const personName = ref('')
 const deviceType = ref<'Google Pixel' | 'Apple iPhone' | 'Mac Mini'>('Google Pixel')
@@ -32,6 +35,36 @@ const statusOptions = ['checked-out', 'checked-in'] as const
 const isFormValid = computed(() => {
   return personName.value.trim() !== '' && deviceId.value.trim() !== ''
 })
+
+// Theme management
+const THEME_STORAGE_KEY = 'theme-preference'
+
+const initializeTheme = () => {
+  // Check localStorage first
+  const stored = localStorage.getItem(THEME_STORAGE_KEY)
+  if (stored) {
+    isDarkMode.value = stored === 'dark'
+  } else {
+    // Fall back to system preference
+    isDarkMode.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
+  applyTheme()
+}
+
+const applyTheme = () => {
+  const html = document.documentElement
+  if (isDarkMode.value) {
+    html.classList.remove('light-mode')
+  } else {
+    html.classList.add('light-mode')
+  }
+  localStorage.setItem(THEME_STORAGE_KEY, isDarkMode.value ? 'dark' : 'light')
+}
+
+const toggleTheme = () => {
+  isDarkMode.value = !isDarkMode.value
+  applyTheme()
+}
 
 // LocalStorage management
 const STORAGE_KEY = 'device-checkout-history'
@@ -183,6 +216,7 @@ const clearMessages = () => {
 
 // Load recent devices on mount
 onMounted(() => {
+  initializeTheme()
   loadRecentDevices()
 })
 </script>
@@ -190,9 +224,17 @@ onMounted(() => {
 <template>
   <div class="app-container">
     <header>
-      <h1>Device Checkout System</h1>
-      <p class="subtitle">Check in and out mobile devices for testing</p>
+      <div class="header-content">
+        <div class="header-title">
+          <h1>Device Checkout System</h1>
+          <p class="subtitle">Check in and out mobile devices for testing</p>
+        </div>
+      </div>
     </header>
+
+    <button class="theme-toggle" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`" @click="toggleTheme">
+      <span class="theme-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+    </button>
 
     <main>
       <!-- Error Message -->
@@ -298,18 +340,34 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--near-black) 0%, var(--dark-blue) 100%);
+  background: var(--bg-primary);
 }
 
 header {
   padding: 2rem 1.5rem 1rem;
+  background: var(--header-bg);
+  border-bottom: 2px solid rgba(168, 243, 155, 0.3);
+}
+
+.header-content {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.header-title {
   text-align: center;
+  flex: 1;
 }
 
 header h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--off-white);
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -321,9 +379,33 @@ header h1 {
 
 .subtitle {
   font-size: 0.9rem;
-  color: var(--light-blue);
+  color: var(--text-secondary);
   font-weight: 300;
   opacity: 0.8;
+}
+
+.theme-toggle {
+  background: none;
+  border: 2px solid rgba(168, 243, 155, 0.3);
+  border-radius: 12px;
+  padding: 0.375rem 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+}
+
+.theme-toggle:hover {
+  border-color: rgba(168, 243, 155, 0.6);
+  background: rgba(168, 243, 155, 0.1);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
 }
 
 main {
@@ -334,19 +416,9 @@ main {
   width: 100%;
 }
 
-section {
-  margin-bottom: 2rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 24px;
-  padding: 2rem;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-}
-
 section h2 {
   font-size: 1.25rem;
-  color: var(--off-white);
+  color: var(--text-primary);
   margin-bottom: 2rem;
   font-weight: 600;
   text-align: center;
@@ -360,7 +432,7 @@ section h2 {
 label {
   display: block;
   margin-bottom: 0.75rem;
-  color: var(--light-blue);
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.85rem;
   text-transform: uppercase;
@@ -371,10 +443,10 @@ input,
 select {
   width: 100%;
   padding: 1rem 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
-  background: rgba(0, 0, 0, 0.2);
-  color: var(--off-white);
+  background: var(--input-bg);
+  color: var(--text-primary);
   font-family: 'SUSE Mono', sans-serif;
   font-size: 1rem;
   transition: all 0.3s ease;
@@ -384,12 +456,12 @@ input:focus,
 select:focus {
   outline: none;
   border-color: var(--primary-blue);
-  box-shadow: 0 0 0 4px rgba(3, 55, 160, 0.2);
-  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 4px rgba(3, 55, 160, 0.3);
+  background: var(--input-bg);
 }
 
 input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .btn {
@@ -461,8 +533,8 @@ input::placeholder {
 
 /* Recent Devices Styles */
 .recent-devices-section {
-  background: linear-gradient(135deg, rgba(168, 243, 155, 0.05), rgba(3, 55, 160, 0.05)) !important;
-  border: 1px solid rgba(168, 243, 155, 0.2) !important;
+  background: var(--section-bg) !important;
+  border: 1.5px solid var(--section-border) !important;
 }
 
 .devices-list {
@@ -477,16 +549,16 @@ input::placeholder {
   align-items: center;
   gap: 1rem;
   padding: 1.25rem;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(168, 243, 155, 0.2);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   transition: all 0.3s ease;
 }
 
 .device-card:hover {
-  background: rgba(0, 0, 0, 0.3);
-  border-color: rgba(168, 243, 155, 0.4);
-  box-shadow: 0 8px 16px rgba(168, 243, 155, 0.1);
+  background: rgba(0, 0, 0, 0.05);
+  border-color: var(--primary-blue);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
 }
 
 .device-info {
@@ -503,7 +575,7 @@ input::placeholder {
 
 .device-person {
   font-size: 0.9rem;
-  color: var(--light-blue);
+  color: var(--text-secondary);
   margin-bottom: 0.25rem;
 }
 
@@ -534,7 +606,93 @@ input::placeholder {
   box-shadow: none;
 }
 
+/* Tablet and Desktop Styles */
+@media (min-width: 768px) {
+  main {
+    max-width: 900px;
+    padding: 2rem 2rem 6rem;
+  }
+
+  section {
+    padding: 3rem;
+    border-radius: 28px;
+  }
+
+  .form-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .form-section > h2 {
+    grid-column: 1 / -1;
+  }
+
+  .form-section form {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .form-section .btn {
+    grid-column: 1 / -1;
+    margin-top: 0.5rem;
+  }
+
+  .devices-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .device-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .device-info {
+    flex-grow: 1;
+  }
+
+  .btn-check-in {
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .theme-toggle {
+    top: 2rem;
+    right: 2rem;
+    font-size: 1.25rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1024px) {
+  main {
+    max-width: 1200px;
+  }
+
+  .devices-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 480px) {
+  header {
+    padding: 1.5rem 1rem 1rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header-title {
+    width: 100%;
+  }
+
   header h1 {
     font-size: 1.75rem;
   }
