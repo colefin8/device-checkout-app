@@ -233,7 +233,7 @@ onMounted(() => {
     </header>
 
     <button class="theme-toggle" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`" @click="toggleTheme">
-      <span class="theme-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+      <span class="theme-icon">{{ isDarkMode ? '💡' : '🌙' }}</span>
     </button>
 
     <main>
@@ -253,13 +253,7 @@ onMounted(() => {
         <form @submit.prevent="handleSubmit">
           <div class="form-group">
             <label for="person-name">Person Name *</label>
-            <input
-              id="person-name"
-              v-model="personName"
-              type="text"
-              placeholder="Enter your name"
-              required
-            />
+            <input id="person-name" v-model="personName" type="text" placeholder="Enter your name" required />
           </div>
 
           <div class="form-group">
@@ -273,13 +267,7 @@ onMounted(() => {
 
           <div class="form-group">
             <label for="device-id">Device Number *</label>
-            <input
-              id="device-id"
-              v-model="deviceId"
-              type="text"
-              placeholder="Enter device number"
-              required
-            />
+            <input id="device-id" v-model="deviceId" type="text" placeholder="Enter device number" required />
           </div>
 
           <div class="form-group">
@@ -307,12 +295,7 @@ onMounted(() => {
               <div class="device-person">{{ device.personName }}</div>
               <div class="device-time">{{ device.checkoutTime }}</div>
             </div>
-            <button
-              type="button"
-              :disabled="isLoading"
-              @click="quickCheckIn(device)"
-              class="btn btn-check-in"
-            >
+            <button type="button" :disabled="isLoading" @click="quickCheckIn(device)" class="btn btn-check-in">
               Check In
             </button>
           </div>
@@ -323,7 +306,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-
 .dropdown {
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -385,18 +367,23 @@ header h1 {
 }
 
 .theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: 2px solid rgba(168, 243, 155, 0.3);
   border-radius: 12px;
-  padding: 0.375rem 0.5rem;
+  padding: 0.25rem 0.375rem;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.25rem;
   transition: all 0.3s ease;
   flex-shrink: 0;
   position: fixed;
-  top: 1rem;
+  bottom: 1rem;
   right: 1rem;
   z-index: 100;
+  height: 2rem;
+  width: 2rem;
 }
 
 .theme-toggle:hover {
@@ -406,6 +393,10 @@ header h1 {
 
 .theme-toggle:active {
   transform: scale(0.95);
+}
+
+.theme-icon {
+  vertical-align: middle;
 }
 
 main {
@@ -515,8 +506,15 @@ input::placeholder {
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message.error {
@@ -624,7 +622,7 @@ input::placeholder {
     gap: 2rem;
   }
 
-  .form-section > h2 {
+  .form-section>h2 {
     grid-column: 1 / -1;
   }
 
@@ -706,9 +704,12 @@ input::placeholder {
     border-radius: 20px;
   }
 
-  input, select, .btn {
+  input,
+  select,
+  .btn {
     padding: 0.875rem 1rem;
-    font-size: 16px; /* Prevents iOS zoom on focus */
+    font-size: 16px;
+    /* Prevents iOS zoom on focus */
   }
 
   .device-card {
