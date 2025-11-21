@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { sendCheckoutToSheet, type CheckoutData } from '@/services/googleSheetsService'
+import type { CheckoutData } from '@/services/googleSheetsService'
 
 // Configuration - Set these environment variables
 const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID || ''
@@ -40,6 +40,9 @@ const handleSubmit = async () => {
   successMessage.value = ''
 
   try {
+    // Lazy load the service only when needed
+    const { sendCheckoutToSheet } = await import('@/services/googleSheetsService')
+
     const now = new Date()
     const checkoutTime = now.toLocaleString()
 
@@ -60,24 +63,24 @@ const handleSubmit = async () => {
     deviceType.value = 'Google Pixel'
     deviceId.value = ''
     status.value = 'checked-out'
+
+    clearMessages()
   } catch (error) {
     errorMessage.value = `Error: ${error instanceof Error ? error.message : String(error)}`
     console.error('Checkout error:', error)
+    clearMessages()
   } finally {
     isLoading.value = false
   }
 }
 
-// Clear messages
+// Clear messages after 5 seconds
 const clearMessages = () => {
   setTimeout(() => {
     successMessage.value = ''
     errorMessage.value = ''
   }, 5000)
 }
-
-// Watch for messages
-clearMessages()
 </script>
 
 <template>
@@ -343,7 +346,7 @@ input::placeholder {
     padding: 1.5rem;
     border-radius: 20px;
   }
-  
+
   input, select, .btn {
     padding: 0.875rem 1rem;
     font-size: 16px; /* Prevents iOS zoom on focus */
